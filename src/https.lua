@@ -19,6 +19,7 @@ local try          = socket.try
 local type         = type
 local pairs        = pairs
 local getmetatable = getmetatable
+local unpack       = unpack
 
 module("ssl.https")
 
@@ -87,12 +88,14 @@ local function tcp(params)
       conn.sock = try(socket.tcp())
       local st = getmetatable(conn.sock).__index.settimeout
       function conn:settimeout(...)
+         conn.timeout = {...}
          return st(self.sock, ...)
       end
       -- Replace TCP's connection function
       function conn:connect(host, port)
          try(self.sock:connect(host, port))
          self.sock = try(ssl.wrap(self.sock, params))
+         self.sock:settimeout(unpack(self.timeout))
          try(self.sock:dohandshake())
          reg(self, getmetatable(self.sock))
          return 1
